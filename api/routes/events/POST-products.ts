@@ -28,6 +28,12 @@ const route: RouteHandler = async ({ request, reply, logger, api, config }) => {
   }
 
   const shopId = body.data?.shop?.id?.split("/").pop();
+  if (!shopId) {
+    throw new Error(
+      `Shopify product event for product ${id} is missing shop.id; check the events subscription query in shopify.app.development.toml`
+    );
+  }
+
   await api.shopifyProduct.upsert({
     id,
     title: product.title,
@@ -36,7 +42,7 @@ const route: RouteHandler = async ({ request, reply, logger, api, config }) => {
     status: product.status,
     vendor: product.vendor,
     productType: product.productType,
-    ...(shopId ? { shop: { _link: shopId } } : {}),
+    shop: { _link: shopId },
     on: ["id"],
   });
 
