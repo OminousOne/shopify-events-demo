@@ -1,0 +1,26 @@
+# Gadget
+.gadget/
+
+# Dependencies
+node_modules/
+
+# Build output
+.react-router/
+
+# OS
+**/.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Env
+.env
+.env.*
+
+# Shopify
+extensions/**/dist
+extensions/**/node_modules
+extensions/**/generated
+shopify.app.*.toml
+.shopify/
