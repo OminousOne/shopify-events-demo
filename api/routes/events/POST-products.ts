@@ -19,37 +19,26 @@ const route: RouteHandler = async ({ request, reply, logger, api, config }) => {
   const id = (request.headers["shopify-resource-id"] as string).split("/").pop()!;
   const product = body.data?.product;
 
-  logger.info({ action: body.action, id }, "event received");
+  logger.info({ action: body.action, id, body }, "event received");
 
-  // 3. Update our database
-  if (body.action === "create") {
-    const shopId = body.data.shop.id.split("/").pop();
-    await api.internal.shopifyProduct.create({
-      id,
-      title: product.title,
-      handle: product.handle,
-      body: product.descriptionHtml,
-      status: product.status,
-      vendor: product.vendor,
-      productType: product.productType,
-      shop: { _link: shopId },
-    });
+  // 3. Upsert the product (skip if the event has no product snapshot, e.g. nested change with empty query result)
+  if (!product) {
+    logger.warn({ id, fieldsChanged: body.fields_changed }, "event missing product data, skipping upsert");
+    return reply.code(200).send();
   }
 
-  if (body.action === "update") {
-    await api.internal.shopifyProduct.update(id, {
-      title: product.title,
-      handle: product.handle,
-      body: product.descriptionHtml,
-      status: product.status,
-      vendor: product.vendor,
-      productType: product.productType,
-    });
-  }
-
-  if (body.action === "delete") {
-    await api.internal.shopifyProduct.delete(id);
-  }
+  const shopId = body.data?.shop?.id?.split("/").pop();
+  await api.shopifyProduct.upsert({
+    id,
+    title: product.title,
+    handle: product.handle,
+    body: product.descriptionHtml,
+    status: product.status,
+    vendor: product.vendor,
+    productType: product.productType,
+    ...(shopId ? { shop: { _link: shopId } } : {}),
+    on: ["id"],
+  });
 
   return reply.code(200).send();
 };
